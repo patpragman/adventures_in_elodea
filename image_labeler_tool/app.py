@@ -63,7 +63,7 @@ class App(tk.Frame):
         self.image_file_names = []
 
         # dataframe to contain the current information in the top directory
-
+        self.df = pd.DataFrame(data={})
 
     def set_folder(self):
         working_directory = askdirectory(
@@ -83,10 +83,15 @@ class App(tk.Frame):
                     if IMAGE_FILE_EXTENSIONS.intersection(suffixes):
                         img_files.append(path_to_str)
 
-        if path.exists()
+        # check to see if it's already been looked at
+        if path.exists(f"{working_directory}/labeling.csv"):
+            self.df = pd.read_csv(f"{working_directory}/labeling.csv")
 
 
     def run(self):
         self.top_root.mainloop()
 
+    def __del__(self):
+        working_dir = self.dir_tk_var.get()
+        self.df.to_csv(f"{working_dir}/labeling.csv")
 
