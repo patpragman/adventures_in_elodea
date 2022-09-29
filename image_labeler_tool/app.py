@@ -7,8 +7,7 @@ filename
 path to file relative to the top directory
 whether it contains the desired thing or not
 """
-
-
+from unsupervised import get_all_image_files
 import tkinter as tk
 import os
 import pathlib
@@ -29,22 +28,43 @@ FALSE_COLOR = 'red'
 
 IMAGE_FILE_EXTENSIONS = {".png", ".jpg", ".JPG"}
 
+class ZoomWindow:
+
+    def __init__(self, x, y, image, flipped):
+        root = tk.Tk()
+        root.title("Popup")
+
+        image_widget = ImageTk.PhotoImage(
+            image.resize(
+                (STARTING_IMAGE_MAX_WIDTH, STARTING_IMAGE_MAX_HEIGHT),
+                Image.ANTIALIAS).rotate(
+                180 * flipped))
+
+    def run(self):
+        pass
 
 
-class App(tk.Frame):
+class App:
 
     def __init__(self):
         self.top_root = tk.Tk()  # root window of the app
         # now set the size to a max size times the scale factor and lock the window size
-        self.top_root.geometry(f"{int(STARTING_IMAGE_MAX_WIDTH*SCALE_FACTOR)}x{int(STARTING_IMAGE_MAX_HEIGHT*SCALE_FACTOR)}")
+        self.top_root.geometry(
+            f"{int(STARTING_IMAGE_MAX_WIDTH * SCALE_FACTOR)}x{int(STARTING_IMAGE_MAX_HEIGHT * SCALE_FACTOR)}")
         self.top_root.resizable(False, False)
+        self.top_root.title("Picture Categorizer")
 
         # image size pane
+        self.x = 0
+        self.y = 0
+
         self.image_pane = tk.Frame(width=640, height=480)
         self.file_name_tk_var = tk.StringVar(value="None")
         self.image_label = tk.Label(self.image_pane, textvariable=self.file_name_tk_var)
         self.image_label.pack(side=tk.TOP)
-        self.image_pane.pack(side=tk.TOP)
+        self.image_pane.pack(side=tk.TOP, expand=True)
+        self.top_root.bind("<Motion>", self.mouse_image_pane_callback)
+        self.image_pane.bind("<Button-1>", self.spawn_popup)
 
         # controller pane
         self.controller_pane = tk.Frame()
@@ -70,11 +90,10 @@ class App(tk.Frame):
         self.status_label_checkbox = tk.Checkbutton(self.controller_pane,
                                                     text="Status",
                                                     variable=self.status_int,
-                                                    onvalue=1, offvalue=0,
                                                     command=lambda:
-                                                   self.mark_false() if self.status_int.get() else self.mark_true())
+                                                    self.toggle())
 
-        # checkbox to flip the image
+        # checkbox to flip the image if it's upside down
         self.flip_image_var = tk.IntVar()
         self.flip_checker = tk.Checkbutton(self.controller_pane,
                                            text='Flip?',
@@ -91,6 +110,11 @@ class App(tk.Frame):
         self.dir_label.pack(side=tk.BOTTOM)
         self.flip_checker.pack(side=tk.LEFT)
 
+        # keyboard bindings
+        self.top_root.bind("<space>", lambda _: self.toggle())
+        self.top_root.bind("<Left>", lambda _: self.change_index(sub))
+        self.top_root.bind("<Right>", lambda _: self.change_index(add))
+
         # variable that we hold all the image file names in
         self.image_file_names = []
 
@@ -106,6 +130,16 @@ class App(tk.Frame):
         # at exit cleanup stuff
         atexit.register(self._clean_up)
 
+    def mouse_image_pane_callback(self, event):
+        actual_x = event.x
+        actual_y = event.y
+        frame_x = actual_x - self.image_label.winfo_x()
+        frame_y = actual_y - self.image_label.winfo_y()
+        self.x, self.y = frame_x, frame_y
+
+    def spawn_popup(self, event):
+        pass
+
     def set_folder(self):
         working_directory = askdirectory(
             title="select the folder where your data lives",
@@ -113,17 +147,8 @@ class App(tk.Frame):
         )
         self.dir_tk_var.set(f"{working_directory}")
         all_file_tuples = os.walk(working_directory, topdown=True)
-        img_files = []
-        for root, dir, files in all_file_tuples:
-            if files:
-                for file in files:
-                    path_to_str = f"{root}/{file}"
-                    path = pathlib.Path(path_to_str)
-                    suffixes = set(path.suffixes)
+        img_files = get_all_image_files(working_directory)
 
-                    if IMAGE_FILE_EXTENSIONS.intersection(suffixes):
-                        relative_path = os.path.relpath(path_to_str, working_directory)
-                        img_files.append(relative_path)
 
         # check to see if it's already been looked at
 
@@ -149,16 +174,21 @@ class App(tk.Frame):
                 self.df = pd.read_csv(f"{self.dir_tk_var.get()}/labeling.csv")
                 self.load_image()
 
+    def toggle(self):
+        if self.df.at[self.image_index, "condition"]:
+            self.mark_false()
+        else:
+            self.mark_true()
+
     def mark_true(self):
         # set the marking on that image to 1
-        self.df["condition"].iloc[self.image_index] = 1
+        self.df.at[self.image_index, "condition"] = 1
         self.load_image()
 
     def mark_false(self):
         # set the marking on the current image to 0
-        self.df["condition"].iloc[self.image_index] = 0
+        self.df.at[self.image_index, "condition"] = 0
         self.load_image()
-
 
     def load_image(self):
         # get the relative path of the image and the working directory
@@ -166,13 +196,23 @@ class App(tk.Frame):
 
         # now get the current status of the image
         current_status = self.df['condition'].iloc[self.image_index]
-        self.status_label_var.set(current_status)
+
+        """
+        we need to set the color of the status label and make sure the switch is set properly
+        
+        tkinter is weird though - it was extremely buggy if you didn't clear the status label checkbox first before
+        reselecting it.
+        """
+        self.status_label_checkbox.selection_clear()
         if current_status:
+            self.status_label_checkbox.select()
             color = TRUE_COLOR
         else:
+            self.status_label_checkbox.deselect()
             color = FALSE_COLOR
 
 
+        # get information about where you're at
         working_directory = self.dir_tk_var.get()
         image_path = f"{working_directory}/{image_relative_path}"
 
@@ -182,19 +222,17 @@ class App(tk.Frame):
             image.resize(
                 (STARTING_IMAGE_MAX_WIDTH, STARTING_IMAGE_MAX_HEIGHT),
                 Image.ANTIALIAS).rotate(
-                180*self.flip_image_var.get()))
+                180 * self.flip_image_var.get()))
+        # note the rotation method tacked onto that - if the "flip" switch is toggled, you'll rotate the image at load
 
-
+        # load the image
         self.image_label.configure(image=image_widget)
         self.image_label.image = image_widget
 
-
-
-        self.status_label_var.set(image_relative_path)
+        # finally, change the color of the status label and the text
+        self.status_label_var.set(f"{image_relative_path} {self.image_index}/{len(self.df)}")
         self.status_label.configure(bg=color)
         self.status_label.bg = color
-
-
 
     def change_index(self, change_function):
         """
@@ -228,10 +266,8 @@ class App(tk.Frame):
         # we need to save all the stuff we care about in a toml dictionary
         if self.dir_tk_var.get():
             with open("state.toml", "w") as toml_file:
-
                 save_state = {}
                 save_state['image_index'] = self.image_index
                 save_state['flip_image_var'] = self.flip_image_var.get()
                 save_state['dir_tk_var'] = self.dir_tk_var.get()
                 toml.dump(save_state, toml_file)
-
