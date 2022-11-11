@@ -28,26 +28,80 @@ FALSE_COLOR = 'red'
 
 IMAGE_FILE_EXTENSIONS = {".png", ".jpg", ".JPG"}
 
-class ZoomWindow:
 
-    def __init__(self, x, y, image, flipped):
-        root = tk.Tk()
-        root.title("Popup")
+class Controller(tk.Frame):
 
-        image_widget = ImageTk.PhotoImage(
-            image.resize(
-                (STARTING_IMAGE_MAX_WIDTH, STARTING_IMAGE_MAX_HEIGHT),
-                Image.ANTIALIAS).rotate(
-                180 * flipped))
+    def __init__(self,
+                 parent,
+                 left_button_callback=lambda: None,
+                 right_button_callback=lambda: None,
+                 radio_button_callback=lambda: None):
+        super().__init__(parent)
 
-    def run(self):
-        pass
+        # callback functions
+        self.left_button_callback = left_button_callback
+        self.right_button_callback = right_button_callback
+        self.radio_button_callback = radio_button_callback
+
+        # left and right buttons
+        self.left_button = tk.Button(
+            parent,
+            text="<-",
+            command=self.left_button_callback)
+
+        self.right_button = tk.Button(
+            parent,
+            text="->",
+            command=self.right_button_callback)
+
+        # now handle the radio buttons
+        self.image_score = tk.IntVar()
+        self.zero_radio_button = tk.Radiobutton(parent,
+                                                text="(0) zero confidence",
+                                                variable=self.image_score,
+                                                value=0,
+                                                command=lambda: self.radio_button_callback(self.image_score.get()))
+        self.low_radio_button = tk.Radiobutton(parent,
+                                               text="(1) low confidence",
+                                               variable=self.image_score,
+                                               value=1,
+                                               command=lambda: self.radio_button_callback(self.image_score.get()))
+
+        self.medium_radio_button = tk.Radiobutton(parent,
+                                                  text="(2) med confidence",
+                                                  variable=self.image_score,
+                                                  value=2,
+                                                  command=lambda: self.radio_button_callback(self.image_score.get()))
+
+        self.high_radio_button = tk.Radiobutton(parent,
+                                                text="(3) high confidence",
+                                                variable=self.image_score,
+                                                value=3,
+                                                command=lambda:self.radio_button_callback(self.image_score.get()))
+
+    def pack(self, **kwargs):
+        self.left_button.pack(kwargs)
+
+        self.zero_radio_button.pack(kwargs)
+        self.low_radio_button.pack(kwargs)
+        self.medium_radio_button.pack(kwargs)
+        self.high_radio_button.pack(kwargs)
+
+        self.right_button.pack(kwargs)
+
+
+root = tk.Tk()
+c = Controller(root, radio_button_callback=print)
+c.pack(side=tk.LEFT)
+
+root.mainloop()
 
 
 class App:
 
     def __init__(self):
         self.top_root = tk.Tk()  # root window of the app
+
         # now set the size to a max size times the scale factor and lock the window size
         self.top_root.geometry(
             f"{int(STARTING_IMAGE_MAX_WIDTH * SCALE_FACTOR)}x{int(STARTING_IMAGE_MAX_HEIGHT * SCALE_FACTOR)}")
@@ -149,7 +203,6 @@ class App:
         all_file_tuples = os.walk(working_directory, topdown=True)
         img_files = get_all_image_files(working_directory)
 
-
         # check to see if it's already been looked at
 
         if os.path.isfile(f"{working_directory}/labeling.csv"):
@@ -210,7 +263,6 @@ class App:
         else:
             self.status_label_checkbox.deselect()
             color = FALSE_COLOR
-
 
         # get information about where you're at
         working_directory = self.dir_tk_var.get()
