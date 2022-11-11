@@ -214,7 +214,7 @@ class App:
 
         # get information about where you're at
         working_directory = self.dir_tk_var.get()
-        image_path = f"{working_directory}/{image_relative_path}"
+        image_path = f"{image_relative_path}"
 
         # load up the image, resize to fit, then update the label that lives in the appropriate tk.Frame
         image = Image.open(image_path)
