@@ -27,3 +27,6 @@ if __name__ == "__main__":
     df = pd.DataFrame(data)
 
     df.to_csv('data_scores.csv', index=False)
+
+    print('stats:')
+    print(df.describe())
