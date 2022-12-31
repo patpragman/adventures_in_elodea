@@ -2,6 +2,9 @@ import pandas as pd
 import os
 import json
 
+from matplotlib import pyplot as plt
+
+
 if __name__ == "__main__":
     target_folder = os.path.join(os.getcwd(), "Pics2022")
 
@@ -28,5 +31,7 @@ if __name__ == "__main__":
 
     df.to_csv('data_scores.csv', index=False)
 
-    print('stats:')
-    print(df.describe())
+    hist = df['score'].hist(bins=4)
+    plt.title('Water Rudder Contamination')
+
+    plt.savefig("water Rudder Contamination")
