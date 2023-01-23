@@ -30,7 +30,7 @@ train_ds = tf.keras.utils.image_dataset_from_directory(
 
 val_ds = tf.keras.utils.image_dataset_from_directory(
   data_dir,
-  validation_split=0.2,
+  validation_split=0.3,
   subset="validation",
   seed=138,
   image_size=(img_height, img_width),
@@ -71,7 +71,7 @@ model.compile(optimizer='adam',
 print(model.summary())
 
 
-epochs = 15
+epochs = 25
 history = model.fit(
   train_ds,
   validation_data=val_ds,
@@ -100,3 +100,5 @@ plt.plot(epochs_range, val_loss, label='Validation Loss')
 plt.legend(loc='upper right')
 plt.title('Training and Validation Loss')
 plt.show()
+
+model.save_weights('model.h5')
