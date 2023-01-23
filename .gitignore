@@ -130,3 +130,4 @@ dmypy.json
 Fall 2022 Semester  # homework file doesn't need to be shared
 ElodeaGoProPics_2018  # 70gb of training data, no need to store this on gh
 Pics2022
+/ml/data/
