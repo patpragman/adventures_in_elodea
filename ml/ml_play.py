@@ -52,9 +52,9 @@ data_augmentation = keras.Sequential(
 model = Sequential([
   data_augmentation,
   layers.Rescaling(1./255, input_shape=(img_height, img_width, 3)),
-  layers.Conv2D(32, 3, padding='same', activation='relu'),
+  layers.Conv2D(16, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
-  layers.Conv2D(64, 3, padding='same', activation='relu'),
+  layers.Conv2D(32, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
   layers.Conv2D(64, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
@@ -71,7 +71,7 @@ model.compile(optimizer='adam',
 print(model.summary())
 
 
-epochs = 25
+epochs = 40
 history = model.fit(
   train_ds,
   validation_data=val_ds,
@@ -101,4 +101,4 @@ plt.legend(loc='upper right')
 plt.title('Training and Validation Loss')
 plt.show()
 
-model.save_weights('model.h5')
+model.save_weights('model1.h5')
