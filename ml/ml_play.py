@@ -22,7 +22,7 @@ image_count = len(list(data_dir.glob('*/*.JPG')))
 print(f'working with {image_count} images')
 train_ds = tf.keras.utils.image_dataset_from_directory(
   data_dir,
-  validation_split=0.2,
+  validation_split=0.3,
   seed=138,
   subset="training",
   image_size=(img_height, img_width),
@@ -71,7 +71,7 @@ model.compile(optimizer='adam',
 print(model.summary())
 
 
-epochs = 40
+epochs = 60
 history = model.fit(
   train_ds,
   validation_data=val_ds,
@@ -101,4 +101,4 @@ plt.legend(loc='upper right')
 plt.title('Training and Validation Loss')
 plt.show()
 
-model.save_weights('model1.h5')
+model.save_weights('model2.h5')
