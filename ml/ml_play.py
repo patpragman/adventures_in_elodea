@@ -12,6 +12,12 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 import pathlib
 
+# print out gpu status
+print('GPU name: ', tf.config.experimental.list_physical_devices('GPU'))
+
+
+
+
 # constants
 batch_size = 32
 img_width = 227
