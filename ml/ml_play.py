@@ -101,9 +101,13 @@ model = Sequential([
     layers.Dropout(0.25),
     layers.MaxPooling2D(2),
 
-
     layers.Conv2D(256, 3, activation='relu'),
-    layers.MaxPooling2D(3),
+    layers.Dropout(0.25),
+    layers.MaxPooling2D(2),
+
+    layers.Conv2D(256, 2, activation='relu'),
+    layers.Conv2D(256, 2, activation='relu'),
+    layers.MaxPooling2D(2),
 
     layers.Flatten(),
 
@@ -174,8 +178,8 @@ for i in range(confusion_mtx.shape[0]):
 plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
 plt.title(f'Confusion Matrix')
-
 plt.savefig('confusionmtx.png')
+plt.show()
 
 plt.plot(history.history['categorical_accuracy'])
 plt.plot(history.history['val_categorical_accuracy'])
@@ -184,6 +188,7 @@ plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.savefig('accuracy_chart.png')
+plt.show()
 
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
@@ -192,3 +197,4 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.savefig('loss.png')
+plt.show()
