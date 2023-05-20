@@ -9,6 +9,11 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+
+
+# preparation steps (we'll need these a lot)
+from sklearn.metrics import classification_report, confusion_matrix
 
 import pathlib
 
@@ -27,6 +32,17 @@ number_of_classes = 2
 data_dir = pathlib.Path("data")
 image_count = len(list(data_dir.glob('*/*.JPG')))
 print(f'working with {image_count} images')
+
+my_callbacks = [
+    EarlyStopping(monitor="val_categorical_accuracy",
+                  patience=5,
+                  restore_best_weights=True),
+    ReduceLROnPlateau(monitor="val_categorical_accuracy",
+                      factor=0.50, patience=3,
+                      verbose=1,
+                      min_delta=0.0001),
+    #ModelCheckpoint(filepath=f'/content/drive/MyDrive/checkpoints/{model_name}.{epoch:02d}-{val_categorical_accuracy:.2f}.h5', save_best_only=True),
+]
 
 datagen = ImageDataGenerator(rescale=1. / 255,
                              validation_split=0.2,
@@ -73,34 +89,46 @@ print(class_weights)
 
 data_augmentation = keras.Sequential(
     [
+        layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
+
         layers.RandomFlip("horizontal",
                           input_shape=(img_height,
                                        img_width,
                                        3)),
-        layers.RandomRotation(0.1),
-        layers.RandomZoom(0.1),
     ]
 )
 
 model = Sequential([
-    data_augmentation,
-    layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
-    layers.Conv2D(16, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Conv2D(32, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Conv2D(64, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    layers.Dropout(0.2),
+    layers.Conv2D(64, 4, activation='relu'),
+    layers.Dropout(0.65),
+    layers.MaxPooling2D(4),
+
+    layers.Conv2D(256, 3, activation='relu'),
+    layers.Dropout(0.25),
+    layers.MaxPooling2D(2),
+
+    layers.Conv2D(256, 3, activation='relu'),
+    layers.Dropout(0.25),
+    layers.MaxPooling2D(2),
+
+    layers.Conv2D(256, 2, activation='relu'),
+    layers.Conv2D(256, 2, activation='relu'),
+    layers.MaxPooling2D(2),
+
     layers.Flatten(),
-    layers.Dense(128, activation='relu'),
+
+    layers.Dense(32, activation='relu'),
+    layers.Dropout(0.25),
+
     layers.Dense(number_of_classes, activation='softmax')
 ])
 
-model.compile(optimizer='adam',
+model.compile(optimizer='sgd',
               loss="categorical_crossentropy",
-              metrics=['categorical_accuracy']
+              metrics=['categorical_accuracy'],
               )
+model.build(input_shape=(None, img_height, img_width, 3))
+
 print(model.summary())
 
 epochs = 20
@@ -109,28 +137,70 @@ history = model.fit(
     validation_data=test_generator,
     epochs=epochs,
     class_weight=class_weights,
+    callbacks=my_callbacks
 )
 
-acc = history.history['accuracy']
-val_acc = history.history['val_accuracy']
+acc = history.history['categorical_accuracy']
+val_acc = history.history['val_categorical_accuracy']
 
 loss = history.history['loss']
 val_loss = history.history['val_loss']
 
-epochs_range = range(epochs)
+model.save_weights('model3.h5')
 
-plt.figure(figsize=(8, 8))
-plt.subplot(1, 2, 1)
-plt.plot(epochs_range, acc, label='Training Accuracy')
-plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-plt.legend(loc='lower right')
-plt.title('Training and Validation Accuracy')
 
-plt.subplot(1, 2, 2)
-plt.plot(epochs_range, loss, label='Training Loss')
-plt.plot(epochs_range, val_loss, label='Validation Loss')
-plt.legend(loc='upper right')
-plt.title('Training and Validation Loss')
+# Evaluate the model on the test set
+test_loss, test_acc = model.evaluate(test_generator)
+print('Test accuracy:', test_acc)
+
+# Make predictions on the test set
+y_pred = model.predict(test_generator)
+y_actual = test_generator.classes
+
+# should round to 0 or 1...
+y_pred = np.round(y_pred)
+y_pred = np.argmax(y_pred, axis=1)
+
+
+confusion_mtx = confusion_matrix(y_actual, y_pred)
+print(confusion_mtx)
+
+# Evaluation
+print(classification_report(test_generator.classes, y_pred))
+
+plt.imshow(confusion_mtx, cmap='binary', interpolation='nearest')
+plt.colorbar()
+
+# manually set - could be better
+tick_marks = np.arange(2)
+plt.xticks(tick_marks, ['Elodea', 'No Elodea'], rotation=45)
+plt.yticks(tick_marks, ['Elodea', 'No Elodea'])
+
+thresh = confusion_mtx.max() / 2.
+for i in range(confusion_mtx.shape[0]):
+    for j in range(confusion_mtx.shape[1]):
+        plt.text(j, i, format(confusion_mtx[i, j]), ha="center", va="center", color="white" if confusion_mtx[i, j] > thresh else "black")
+
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.title(f'Confusion Matrix')
+plt.savefig('confusionmtx.png')
 plt.show()
 
-model.save_weights('model2.h5')
+plt.plot(history.history['categorical_accuracy'])
+plt.plot(history.history['val_categorical_accuracy'])
+plt.title(f'accuracy chart')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.savefig('accuracy_chart.png')
+plt.show()
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title(f'loss chart')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.savefig('loss.png')
+plt.show()
