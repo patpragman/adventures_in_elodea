@@ -29,10 +29,10 @@ print(f'working with {image_count} images')
 
 my_callbacks = [
     EarlyStopping(monitor="val_categorical_accuracy",
-                  patience=5,
+                  patience=25,
                   restore_best_weights=True),
     ReduceLROnPlateau(monitor="val_categorical_accuracy",
-                      factor=0.50, patience=3,
+                      factor=0.50, patience=15,
                       verbose=1,
                       min_delta=0.0001),
     #ModelCheckpoint(filepath=f'/content/drive/MyDrive/checkpoints/{model_name}.{epoch:02d}-{val_categorical_accuracy:.2f}.h5', save_best_only=True),
@@ -91,28 +91,18 @@ data_augmentation = keras.Sequential(
                                        3)),
     ]
 )
+nodes = 16
+layer_count = 32
+dropout_value = 0.2
+
+layer_list = []
+for i in range(0, layer_count):
+    layer_list.append(layers.Dense(nodes, activation='relu'))
+    layer_list.append(layers.Dropout(dropout_value))
 
 model = Sequential([
-    layers.Conv2D(64, 4, activation='relu'),
-    layers.Dropout(0.65),
-    layers.MaxPooling2D(4),
-
-    layers.Conv2D(256, 3, activation='relu'),
-    layers.Dropout(0.25),
-    layers.MaxPooling2D(2),
-
-    layers.Conv2D(256, 3, activation='relu'),
-    layers.Dropout(0.25),
-    layers.MaxPooling2D(2),
-
-    layers.Conv2D(256, 2, activation='relu'),
-    layers.Conv2D(256, 2, activation='relu'),
-    layers.MaxPooling2D(2),
-
     layers.Flatten(),
-
-    layers.Dense(32, activation='relu'),
-    layers.Dropout(0.25),
+    *layer_list,
 
     layers.Dense(number_of_classes, activation='softmax')
 ])
@@ -125,7 +115,7 @@ model.build(input_shape=(None, img_height, img_width, 3))
 
 print(model.summary())
 
-epochs = 20
+epochs = 250
 history = model.fit(
     train_generator,
     validation_data=test_generator,
