@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Resize
 from dataset import ElodeaImages
 
+target_x, target_y = 512, 512
+
 # Get cpu, gpu or mps device for training.
 device = (
     "cuda"
@@ -25,7 +27,7 @@ class NeuralNetwork(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
             # 5568 × 4176
-            nn.Linear(5568*4176, 512),
+            nn.Linear(target_x*target_y, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
@@ -47,7 +49,7 @@ if __name__ == "__main__":
 
     #resize = lambda img: Resize(img, size=(512, 512))
     elodea_images = ElodeaImages(img_dir="../data",
-                                 transforms=[], target_transforms=[])
+                                 transforms=[], target_transforms=[lambda i: Resize(size=(target_x, target_y))])
 
     train_size = int(0.8 * len(elodea_images))
     test_size = len(elodea_images) - train_size
