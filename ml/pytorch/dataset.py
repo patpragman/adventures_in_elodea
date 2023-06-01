@@ -1,11 +1,19 @@
+import torch
 from torch.utils.data import Dataset
+import numpy as np
 
 import os
-import pandas as pd
 from torchvision.io import read_image
 
+
 class ElodeaImages(Dataset):
-    def __init__(self, img_dir, transform=None, target_transform=None):
+    def __init__(self,
+                 img_dir,
+                 transforms=[],
+                 target_transforms=[]):
+
+        onehot_dictionary = {"score_0": float(0), "score_3": float(1)}
+        onehot = lambda s: onehot_dictionary[s]
 
         self.image_paths = []
         self.image_labels = []
@@ -18,33 +26,36 @@ class ElodeaImages(Dataset):
                         path
                     )
                     self.image_labels.append(
-                        root.split("/")[-1]
+                        onehot(root.split("/")[-1])
                     )
 
         self.img_dir = img_dir
-        self.transform = transform
-        self.target_transform = target_transform
+        self.transforms = transforms
+        self.target_transform = target_transforms
 
+        self.image_labels = torch.tensor(np.array(self.image_labels, dtype="float32"))
 
     def __len__(self):
-        return len(self.img_labels)
+        return len(self.image_labels)
 
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         image = read_image(img_path)
         label = self.image_labels[idx]
 
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
-        return image, label
+        for transform in self.transforms:
+            image = transform(image)
+
+        for transform in self.target_transform:
+            label = transform(label)
+
+        return torch.tensor(image), label
 
 
 if __name__ == "__main__":
     file = "../data"
 
-    elodea = ElodeaImages(file)
+    elodea = ElodeaImages(file, transforms=[])
 
     for file, value in elodea:
         print(file, value)
