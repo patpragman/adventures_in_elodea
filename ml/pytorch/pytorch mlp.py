@@ -26,7 +26,7 @@ class NeuralNetwork(nn.Module):
         super().__init__()
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(in_features=target_x*target_y,
+            nn.Linear(in_features=3*target_x*target_y,  # 3 for 3 channels
                       out_features=512),
             nn.ReLU(),
             nn.Linear(512, 512),
@@ -36,7 +36,6 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, x):
         x = self.flatten(x)
-        print(x.shape)
         logits = self.linear_relu_stack(x)
         return logits
 
