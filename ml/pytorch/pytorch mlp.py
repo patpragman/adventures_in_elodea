@@ -22,12 +22,12 @@ print(f"Using {device} device")
 
 # Define model
 class NeuralNetwork(nn.Module):
-    def __init__(self, target_x, target_y):
+    def __init__(self, target_x, target_y, batch_size):
         super().__init__()
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            # 5568 × 4176
-            nn.Linear(target_x*target_y, 512),
+            nn.Linear(in_features=target_x*target_y,
+                      out_features=512),
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     )
     print(f"Using {device} device")
 
-    model = NeuralNetwork(target_x, target_y).to(device)
+    model = NeuralNetwork(target_x, target_y, batch_size=BATCH_SIZE).to(device)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
