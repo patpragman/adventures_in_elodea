@@ -92,7 +92,7 @@ if __name__ == "__main__":
         size = len(dataset)
         model.train()
         for batch, (X, y) in enumerate(dataset):
-            X = X.type(torch.LongTensor)
+            #X = X.type(torch.LongTensor)
             y = y.type(torch.LongTensor)
             X, y = X.to(device), y.to(device)
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         test_loss, correct = 0, 0
         with torch.no_grad():
             for X, y in dataset:
-                X = X.type(torch.LongTensor)
+                #X = X.type(torch.LongTensor)
                 y = y.type(torch.LongTensor)  # cast to GPU appropriate type
 
                 X, y = X.to(device), y.to(device)
