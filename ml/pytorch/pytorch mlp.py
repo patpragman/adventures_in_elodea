@@ -92,6 +92,7 @@ if __name__ == "__main__":
         size = len(dataset)
         model.train()
         for batch, (X, y) in enumerate(dataset):
+            y.type(torch.LongTensor)
             X, y = X.to(device), y.to(device)
 
             # Compute prediction error
@@ -115,6 +116,8 @@ if __name__ == "__main__":
         test_loss, correct = 0, 0
         with torch.no_grad():
             for X, y in dataset:
+                y.type(torch.LongTensor)  # cast to GPU appropriate type
+
                 X, y = X.to(device), y.to(device)
                 pred = model(X)
                 test_loss += loss_fn(pred, y).item()
