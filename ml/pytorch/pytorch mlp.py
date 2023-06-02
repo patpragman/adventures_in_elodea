@@ -36,6 +36,7 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, x):
         x = self.flatten(x)
+        print(x.shape)
         logits = self.linear_relu_stack(x)
         return logits
 
