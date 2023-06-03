@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -129,9 +130,19 @@ if __name__ == "__main__":
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
                 size += 1
 
+        y_preds = np.array([model(X) for X, _ in dataset])
+        y_true = np.array([y for _, y in dataset])
+
+
         test_loss /= num_batches
         correct /= size
         print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+        cm = confusion_matrix(y_true, y_preds)
+        r = classification_report(y_true, y_preds)
+
+        print(f'Confusion Matrix:  \n{cm}')
+        print(r)
 
 
     epochs = 5
