@@ -31,7 +31,11 @@ class NeuralNetwork(nn.Module):
             nn.Linear(in_features=3*target_x*target_y,  # 3 for 3 channels
                       out_features=512),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
             nn.ReLU(),
             nn.Linear(512, 2)
         )
