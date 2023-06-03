@@ -134,8 +134,8 @@ if __name__ == "__main__":
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
                 size += 1
 
-            y_preds = np.array([model(X.to(device)) for X, _ in dataset])
-            y_true = np.array([y.type(torch.LongTensor) for _, y in dataset])
+            y_preds = np.array([model(X) for X, _ in dataset])
+            y_true = np.array([y for _, y in dataset])
 
             cm = confusion_matrix(y_true, y_preds)
             r = classification_report(y_true, y_preds)
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         print(r)
 
 
-    epochs = 5
+    epochs = 1
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
         train(train_dataloader_custom, model, loss_fn, optimizer)
