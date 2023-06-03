@@ -111,7 +111,7 @@ if __name__ == "__main__":
             optimizer.step()
             optimizer.zero_grad()
 
-            if batch % 100 == 0:
+            if batch % BATCH_SIZE == 0:
                 loss, current = loss.item(), (batch + 1) * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
