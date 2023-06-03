@@ -29,7 +29,7 @@ class NeuralNetwork(nn.Module):
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(in_features=3*target_x*target_y,  # 3 for 3 channels
-                      out_features=512),
+                      out_features=1024),
             nn.ReLU(),
             nn.Linear(1024, 1024),
             nn.ReLU(),
