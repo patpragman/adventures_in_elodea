@@ -134,8 +134,8 @@ if __name__ == "__main__":
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
                 size += 1
 
-            y_preds = np.array([model(X) for X, _ in dataset]).type(torch.LongTensor).to(device)
-            y_true = np.array([y for _, y in dataset]).type(torch.LongTensor).to(device)
+            y_preds = torch.tensor([model(X) for X, _ in dataset])
+            y_true = torch.tensor([y for _, y in dataset])
 
             cm = confusion_matrix(y_true, y_preds)
             r = classification_report(y_true, y_preds)
