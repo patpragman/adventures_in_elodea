@@ -49,7 +49,7 @@ class ElodeaImages(Dataset):
         for transform in self.target_transform:
             label = transform(label)
 
-        return torch.tensor(image), label
+        return image.clone().detach(), label
 
 
 if __name__ == "__main__":

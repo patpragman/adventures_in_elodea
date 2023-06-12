@@ -4,7 +4,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from dataset import ElodeaImages
-from sklearn.metrics import confusion_matrix, classification_report
+
+from trainer import train
+from tester import test
 
 # some hyperparams
 BATCH_SIZE = 32
@@ -21,14 +23,13 @@ device = (
 print(f"Using {device} device")
 
 
-
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self, target_x, target_y, batch_size):
         super().__init__()
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(in_features=3*target_x*target_y,  # 3 for 3 channels
+            nn.Linear(in_features=3 * target_x * target_y,  # 3 for 3 channels
                       out_features=1024),
             nn.ReLU(),
             nn.Linear(1024, 1024),
@@ -37,14 +38,13 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Linear(512, 2)
+            nn.Linear(512, 1)
         )
 
     def forward(self, x):
         x = self.flatten(x)
         logits = self.linear_relu_stack(x)
         return logits
-
 
 
 if __name__ == "__main__":
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    #resize = lambda img: Resize(img, size=(512, 512))
+    # resize = lambda img: Resize(img, size=(512, 512))
     elodea_images = ElodeaImages(img_dir="../data",
                                  transforms=[data_transform], target_transforms=[])
 
@@ -78,83 +78,34 @@ if __name__ == "__main__":
                                         num_workers=WORKERS,
                                         shuffle=False)  # don't usually need to shuffle testing data
 
-
     device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
+        "cuda" if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available()
         else "cpu"
     )
+    # device = 'cpu'   # manual set for debugging
     print(f"Using {device} device")
 
-    model = NeuralNetwork(target_x, target_y, batch_size=BATCH_SIZE).to(device)
+    model = NeuralNetwork(target_x,
+                          target_y,
+                          batch_size=BATCH_SIZE)
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
-
-
-    def train(dataset, model, loss_fn, optimizer):
-        size = len(dataset)
-        model.train()
-        for batch, (X, y) in enumerate(dataset):
-            #X = X.type(torch.LongTensor)
-            y = y.type(torch.LongTensor)
-            X, y = X.to(device), y.to(device)
-
-            # Compute prediction error
-            pred = model(X)
-            loss = loss_fn(pred, y)
-
-            # Backpropagation
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-
-            if batch % BATCH_SIZE == 0:
-                loss, current = loss.item(), (batch + 1) * len(X)
-                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-    def test(dataset, model, loss_fn):
-
-
-        size = len(dataset)
-        num_batches = 0
-        model.eval()
-        test_loss, correct = 0, 0
-
-        with torch.no_grad():
-            for X, y in dataset:
-                y = y.type(torch.LongTensor)  # cast to GPU appropriate type
-                X, y = X.to(device), y.to(device)
-
-                pred = model(X)
-                print(pred, "debug")
-                test_loss += loss_fn(pred, y).item()
-                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-                size += 1
-
-            y_preds = torch.tensor([model(X) for X, _ in dataset])
-            y_true = torch.tensor([y for _, y in dataset])
-
-            cm = confusion_matrix(y_true, y_preds)
-            r = classification_report(y_true, y_preds)
-
-
-        test_loss /= num_batches
-        correct /= size
-        print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-
-
-
-        print(f'Confusion Matrix:  \n{cm}')
-        print(r)
-
 
     epochs = 1
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
-        train(train_dataloader_custom, model, loss_fn, optimizer)
-        test(test_dataloader_custom, model, loss_fn)
+        train(train_dataloader_custom,
+              model,
+              loss_fn,
+              optimizer,
+              batch_size=BATCH_SIZE,
+              device=device,
+              progress_bar=True)
+
+    test(test_dataloader_custom,
+         model,
+         loss_fn,)
+
     print("Done!")
