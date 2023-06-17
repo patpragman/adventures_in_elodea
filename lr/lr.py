@@ -37,7 +37,10 @@ for i, data_path in enumerate(datasets):
     Y = []
     classifier = LogisticRegression()
     classes = os.listdir(data_path)
-    classes.remove(".DS_Store")
+
+    if ".DS_Store" in classes:
+        # for macs
+        classes.remove(".DS_Store")
 
     print('found the following classes in the data path')
     for c in classes:
