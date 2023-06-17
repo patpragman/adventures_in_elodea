@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 # 5568 × 4176
 k = 8
-IMG_WIDTH = 5568 // k
-IMG_HEIGHT = 4176 // k
+IMG_WIDTH = 512
+IMG_HEIGHT = 512
 print(IMG_WIDTH, IMG_HEIGHT)
 
 # let's do logistic regression... I'll be kind of non-plussed if this ends up being better
@@ -35,7 +35,7 @@ for i, data_path in enumerate(datasets):
     # variables to hold our data
     data = []
     Y = []
-    classifier = LogisticRegression()
+    classifier = LogisticRegression(class_weight='balanced')
     classes = os.listdir(data_path)
 
     if ".DS_Store" in classes:
@@ -76,6 +76,8 @@ for i, data_path in enumerate(datasets):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,
                                                         random_state=42)  # for consistency
 
+
+
     # now fit the classifier
     # fit the model with data
     classifier.fit(X_train, y_train)
@@ -106,9 +108,7 @@ for i, data_path in enumerate(datasets):
     plt.title('Logistic Regression Model')
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
-    f = plt.gcf()
-    plt.savefig(f)
-    plt.show()
+    plt.savefig('fig1.png')
 
     # save it
     with open(f"logistic_regression_{i}.pkl", "wb") as file:
