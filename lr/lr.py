@@ -106,6 +106,8 @@ for i, data_path in enumerate(datasets):
     plt.title('Logistic Regression Model')
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
+    f = plt.gcf()
+    plt.savefig(f)
     plt.show()
 
     # save it
