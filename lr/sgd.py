@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import PIL
 import tensorflow as tf
@@ -20,23 +18,20 @@ import pathlib
 # print out gpu status
 print('GPU name: ', tf.config.experimental.list_physical_devices('GPU'))
 
-
-
-
 # constants
-batch_size = 16
-k = 32
-img_width = 512
-img_height = 512
+batch_size = 32
+
+img_width = 5568
+img_height = 4176
 number_of_classes = 2
 
-data_dir = pathlib.Path("data")
+data_dir = pathlib.Path("../ml/data")
 image_count = len(list(data_dir.glob('*/*.JPG')))
 print(f'working with {image_count} images')
 
 my_callbacks = [
     EarlyStopping(monitor="val_categorical_accuracy",
-                  patience=300,
+                  patience=150,
                   restore_best_weights=True),
     ReduceLROnPlateau(monitor="val_categorical_accuracy",
                       factor=0.50, patience=150,
@@ -100,24 +95,11 @@ data_augmentation = keras.Sequential(
                                        3)),
     ]
 )
-nodes = 512
-layer_count = 4
-
-dropout_value = 0.15
-
-outer_layer = []
-rate = ((nodes)/layer_count)
-
-for i in range(layer_count, 0, -1):
-    neurons = max(rate*i, 2)
-    outer_layer.append(layers.Dense(neurons, activation='relu'))
-    outer_layer.append(layers.Dropout(dropout_value))
 
 model = Sequential([
     layers.Flatten(),
-    *outer_layer,
-
-    layers.Dense(number_of_classes, activation='softmax')
+    layers.Dense(number_of_classes,
+                 activation='sigmoid')
 ])
 
 model.compile(optimizer='sgd',
