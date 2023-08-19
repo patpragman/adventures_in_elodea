@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 # 5568 × 4176
 k = 8
-IMG_WIDTH = 512
-IMG_HEIGHT = 512
+IMG_WIDTH = 600
+IMG_HEIGHT = 600
 print(IMG_WIDTH, IMG_HEIGHT)
 
 # let's do logistic regression... I'll be kind of non-plussed if this ends up being better
@@ -75,9 +75,6 @@ for i, data_path in enumerate(datasets):
     # and all the Y values into another one, let's do a train test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,
                                                         random_state=42)  # for consistency
-
-
-
     # now fit the classifier
     # fit the model with data
     classifier.fit(X_train, y_train)
@@ -108,7 +105,7 @@ for i, data_path in enumerate(datasets):
     plt.title('Logistic Regression Model')
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
-    plt.savefig('fig1.png')
+    plt.savefig('fig0.png')
 
     # save it
     with open(f"logistic_regression_{i}.pkl", "wb") as file:

@@ -21,8 +21,9 @@ print('GPU name: ', tf.config.experimental.list_physical_devices('GPU'))
 # constants
 batch_size = 32
 
-img_width = 5568
-img_height = 4176
+scale_factor = 0.25
+img_width = int((5568*scale_factor)//1)
+img_height = int((4176*scale_factor)//1)
 number_of_classes = 2
 
 data_dir = pathlib.Path("../ml/data")
@@ -41,11 +42,12 @@ my_callbacks = [
 ]
 
 datagen = ImageDataGenerator(rescale=1. / 255,
+                             preprocessing_function=tf.image.rgb_to_grayscale,  # convert to grayscale
                              validation_split=0.2,
                              zoom_range=0.1,  # Randomly zoom image
                              width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
                              height_shift_range=0.1,
-                             rotation_range=30,
+                             rotation_range=15,
                              horizontal_flip=True,
                              vertical_flip=True,
                              )
@@ -59,7 +61,7 @@ train_generator = datagen.flow_from_directory(
 
 test_generator = datagen.flow_from_directory(
     data_dir,
-    target_size=(img_width, img_width),  # resize for alexnet
+    target_size=(img_width, img_width),  # resize
     batch_size=batch_size,
     subset='validation',
     )
@@ -84,17 +86,6 @@ counter = Counter(train_generator.classes)
 max_val = float(max(counter.values()))
 class_weights = {class_id : max_val/num_images for class_id, num_images in counter.items()}
 print(class_weights)
-
-data_augmentation = keras.Sequential(
-    [
-        layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
-
-        layers.RandomFlip("horizontal",
-                          input_shape=(img_height,
-                                       img_width,
-                                       3)),
-    ]
-)
 
 model = Sequential([
     layers.Flatten(),
