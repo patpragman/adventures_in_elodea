@@ -32,10 +32,10 @@ print(f'working with {image_count} images')
 
 my_callbacks = [
     EarlyStopping(monitor="val_categorical_accuracy",
-                  patience=150,
+                  patience=50,
                   restore_best_weights=True),
     ReduceLROnPlateau(monitor="val_categorical_accuracy",
-                      factor=0.50, patience=150,
+                      factor=0.50, patience=25,
                       verbose=1,
                       min_delta=0.0001),
     #ModelCheckpoint(filepath=f'/content/drive/MyDrive/checkpoints/{model_name}.{epoch:02d}-{val_categorical_accuracy:.2f}.h5', save_best_only=True),
@@ -89,8 +89,9 @@ print(class_weights)
 
 model = Sequential([
     layers.Flatten(),
-    layers.Dense(number_of_classes,
-                 activation='sigmoid')
+    layers.Dense(img_width*img_height, activation='relu'),
+    layers.Dense(2,
+                 activation='softmax')
 ])
 
 model.compile(optimizer='sgd',

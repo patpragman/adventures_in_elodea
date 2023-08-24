@@ -11,7 +11,6 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 
-
 # preparation steps (we'll need these a lot)
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -19,9 +18,6 @@ import pathlib
 
 # print out gpu status
 print('GPU name: ', tf.config.experimental.list_physical_devices('GPU'))
-
-
-
 
 # constants
 batch_size = 16
@@ -42,7 +38,7 @@ my_callbacks = [
                       factor=0.50, patience=10,
                       verbose=1,
                       min_delta=0.0001),
-    #ModelCheckpoint(filepath=f'/content/drive/MyDrive/checkpoints/{model_name}.{epoch:02d}-{val_categorical_accuracy:.2f}.h5', save_best_only=True),
+    # ModelCheckpoint(filepath=f'/content/drive/MyDrive/checkpoints/{model_name}.{epoch:02d}-{val_categorical_accuracy:.2f}.h5', save_best_only=True),
 ]
 
 datagen = ImageDataGenerator(rescale=1. / 255,
@@ -60,20 +56,22 @@ train_generator = datagen.flow_from_directory(
     target_size=(img_width, img_width),
     batch_size=batch_size,
     subset='training',
-    )
+)
 
 test_generator = datagen.flow_from_directory(
     data_dir,
     target_size=(img_width, img_width),  # resize for alexnet
     batch_size=batch_size,
     subset='validation',
-    )
+)
 
 train_class_counts = train_generator.classes
 test_class_counts = test_generator.classes
 
-train_class_count = dict(zip(train_generator.class_indices.keys(), np.zeros(len(train_generator.class_indices), dtype=int)))
-test_class_count = dict(zip(test_generator.class_indices.keys(), np.zeros(len(test_generator.class_indices), dtype=int)))
+train_class_count = dict(
+    zip(train_generator.class_indices.keys(), np.zeros(len(train_generator.class_indices), dtype=int)))
+test_class_count = dict(
+    zip(test_generator.class_indices.keys(), np.zeros(len(test_generator.class_indices), dtype=int)))
 
 for label in train_class_counts:
     train_class_count[list(train_generator.class_indices.keys())[int(label)]] += 1
@@ -85,9 +83,10 @@ print('Number of training samples in each class in the training set:', train_cla
 print('Number of test samples in each class in the testing set:', test_class_count)
 
 from collections import Counter
+
 counter = Counter(train_generator.classes)
 max_val = float(max(counter.values()))
-class_weights = {class_id : max_val/num_images for class_id, num_images in counter.items()}
+class_weights = {class_id: max_val / num_images for class_id, num_images in counter.items()}
 print(class_weights)
 
 data_augmentation = keras.Sequential(
@@ -100,26 +99,39 @@ data_augmentation = keras.Sequential(
                                        3)),
     ]
 )
-nodes = 512
+nodes = 4096
 layer_count = 4
 
-dropout_value = 0.15
+dropout_value = 0.1
 
-outer_layer = []
-rate = ((nodes)/layer_count)
+imported_model = tf.keras.applications.ResNet50(include_top=False,
+                                                input_shape=(img_width, img_height, 3),
+                                                pooling='avg', classes=5,
+                                                weights='imagenet')
+"""k = len(imported_model.layers)
+print(k)
 
-for i in range(layer_count, 0, -1):
-    neurons = max(rate*i, 2)
-    outer_layer.append(layers.Dense(neurons, activation='relu'))
-    outer_layer.append(layers.Dropout(dropout_value))
+for i, layer in enumerate(imported_model.layers):
+
+    if i >= (k - 16):
+        continue
+
+    layer.trainable = False
+"""
 
 model = Sequential([
+
+    imported_model,
+
     layers.Flatten(),
-    *outer_layer,
+
+    layers.Dense(1024, activation='relu'),
+    layers.Dropout(dropout_value),
+
     layers.Dense(number_of_classes, activation='softmax')
 ])
 
-model.compile(optimizer='sgd',
+model.compile(optimizer='adam',
               loss="categorical_crossentropy",
               metrics=['categorical_accuracy'],
               )
@@ -142,9 +154,6 @@ val_acc = history.history['val_categorical_accuracy']
 loss = history.history['loss']
 val_loss = history.history['val_loss']
 
-model.save_weights('model4.h5')
-
-
 # Evaluate the model on the test set
 test_loss, test_acc = model.evaluate(test_generator)
 print('Test accuracy:', test_acc)
@@ -156,7 +165,6 @@ y_actual = test_generator.classes
 # should round to 0 or 1...
 y_pred = np.round(y_pred)
 y_pred = np.argmax(y_pred, axis=1)
-
 
 confusion_mtx = confusion_matrix(y_actual, y_pred)
 print(confusion_mtx)
@@ -175,7 +183,8 @@ plt.yticks(tick_marks, ['Elodea', 'No Elodea'])
 thresh = confusion_mtx.max() / 2.
 for i in range(confusion_mtx.shape[0]):
     for j in range(confusion_mtx.shape[1]):
-        plt.text(j, i, format(confusion_mtx[i, j]), ha="center", va="center", color="white" if confusion_mtx[i, j] > thresh else "black")
+        plt.text(j, i, format(confusion_mtx[i, j]), ha="center", va="center",
+                 color="white" if confusion_mtx[i, j] > thresh else "black")
 
 plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
