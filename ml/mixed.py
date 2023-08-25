@@ -10,6 +10,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from collections import Counter
 
 # preparation steps (we'll need these a lot)
 from sklearn.metrics import classification_report, confusion_matrix
@@ -22,13 +23,10 @@ print('GPU name: ', tf.config.experimental.list_physical_devices('GPU'))
 # constants
 batch_size = 16
 k = 32
-img_width = 512
-img_height = 512
 number_of_classes = 2
+dropout_value = 0.1
+epochs = 500
 
-data_dir = pathlib.Path("data")
-image_count = len(list(data_dir.glob('*/*.JPG')))
-print(f'working with {image_count} images')
 
 my_callbacks = [
     EarlyStopping(monitor="val_categorical_accuracy",
@@ -38,7 +36,6 @@ my_callbacks = [
                       factor=0.50, patience=10,
                       verbose=1,
                       min_delta=0.0001),
-    # ModelCheckpoint(filepath=f'/content/drive/MyDrive/checkpoints/{model_name}.{epoch:02d}-{val_categorical_accuracy:.2f}.h5', save_best_only=True),
 ]
 
 datagen = ImageDataGenerator(rescale=1. / 255,
@@ -51,161 +48,149 @@ datagen = ImageDataGenerator(rescale=1. / 255,
                              vertical_flip=True,
                              )
 
-train_generator = datagen.flow_from_directory(
-    data_dir,
-    target_size=(img_width, img_width),
-    batch_size=batch_size,
-    subset='training',
-)
+sizes = [1024, 512, 256, 128, 64]
+sizes.reverse()
+for size in sizes:
+    print(f'Building Model for Image size: {size} x {size}')
 
-test_generator = datagen.flow_from_directory(
-    data_dir,
-    target_size=(img_width, img_width),  # resize for alexnet
-    batch_size=batch_size,
-    subset='validation',
-)
+    img_width = size
+    img_height = size
 
-train_class_counts = train_generator.classes
-test_class_counts = test_generator.classes
+    data_dir = pathlib.Path(f"../resized_data/data_{size}")
+    image_count = len(list(data_dir.glob('*/*.JPG')))
+    train_generator = datagen.flow_from_directory(
+        data_dir,
+        batch_size=batch_size,
+        subset='training',
+    )
 
-train_class_count = dict(
-    zip(train_generator.class_indices.keys(), np.zeros(len(train_generator.class_indices), dtype=int)))
-test_class_count = dict(
-    zip(test_generator.class_indices.keys(), np.zeros(len(test_generator.class_indices), dtype=int)))
+    test_generator = datagen.flow_from_directory(
+        data_dir,
+        batch_size=batch_size,
+        subset='validation',
+    )
 
-for label in train_class_counts:
-    train_class_count[list(train_generator.class_indices.keys())[int(label)]] += 1
+    train_class_counts = train_generator.classes
+    test_class_counts = test_generator.classes
 
-for label in test_class_counts:
-    test_class_count[list(test_generator.class_indices.keys())[int(label)]] += 1
+    train_class_count = dict(
+        zip(train_generator.class_indices.keys(), np.zeros(len(train_generator.class_indices), dtype=int)))
+    test_class_count = dict(
+        zip(test_generator.class_indices.keys(), np.zeros(len(test_generator.class_indices), dtype=int)))
 
-print('Number of training samples in each class in the training set:', train_class_count)
-print('Number of test samples in each class in the testing set:', test_class_count)
+    for label in train_class_counts:
+        train_class_count[list(train_generator.class_indices.keys())[int(label)]] += 1
 
-from collections import Counter
+    for label in test_class_counts:
+        test_class_count[list(test_generator.class_indices.keys())[int(label)]] += 1
 
-counter = Counter(train_generator.classes)
-max_val = float(max(counter.values()))
-class_weights = {class_id: max_val / num_images for class_id, num_images in counter.items()}
-print(class_weights)
+    print('Number of training samples in each class in the training set:', train_class_count)
+    print('Number of test samples in each class in the testing set:', test_class_count)
 
-data_augmentation = keras.Sequential(
-    [
-        layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
+    counter = Counter(train_generator.classes)
+    max_val = float(max(counter.values()))
+    class_weights = {class_id: max_val / num_images for class_id, num_images in counter.items()}
+    print(class_weights)
 
-        layers.RandomFlip("horizontal",
-                          input_shape=(img_height,
-                                       img_width,
-                                       3)),
-    ]
-)
-nodes = 4096
-layer_count = 4
+    data_augmentation = keras.Sequential(
+        [
+            layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
 
-dropout_value = 0.1
+            layers.RandomFlip("horizontal",
+                              input_shape=(img_height,
+                                           img_width,
+                                           3)),
+        ]
+    )
 
-imported_model = tf.keras.applications.ResNet50(include_top=False,
-                                                input_shape=(img_width, img_height, 3),
-                                                pooling='avg', classes=5,
-                                                weights='imagenet')
-"""k = len(imported_model.layers)
-print(k)
+    # import the ResNet50 model
+    imported_model = tf.keras.applications.ResNet50(include_top=False,
+                                                    input_shape=(img_width, img_height, 3),
+                                                    pooling='avg', classes=5,
+                                                    weights='imagenet')
 
-for i, layer in enumerate(imported_model.layers):
+    model = Sequential([
+        imported_model,  # Resnet of whatever size you want
+        layers.Flatten(),
+        layers.Dense(1024, activation='relu'),  # layer of neurons here for good measure
+        layers.Dropout(dropout_value),
+        layers.Dense(number_of_classes, activation='softmax')
+    ])
 
-    if i >= (k - 16):
-        continue
+    model.compile(optimizer='adam',
+                  loss="categorical_crossentropy",
+                  metrics=['categorical_accuracy'],
+                  )
 
-    layer.trainable = False
-"""
+    model.build(input_shape=(None, img_height, img_width, 3))
 
-model = Sequential([
+    print(model.summary())
 
-    imported_model,
+    history = model.fit(
+        train_generator,
+        validation_data=test_generator,
+        epochs=epochs,
+        class_weight=class_weights,
+        callbacks=my_callbacks
+    )
 
-    layers.Flatten(),
+    acc = history.history['categorical_accuracy']
+    val_acc = history.history['val_categorical_accuracy']
 
-    layers.Dense(1024, activation='relu'),
-    layers.Dropout(dropout_value),
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
 
-    layers.Dense(number_of_classes, activation='softmax')
-])
+    # Evaluate the model on the test set
+    test_loss, test_acc = model.evaluate(test_generator)
+    print('Test accuracy:', test_acc)
 
-model.compile(optimizer='adam',
-              loss="categorical_crossentropy",
-              metrics=['categorical_accuracy'],
-              )
-model.build(input_shape=(None, img_height, img_width, 3))
+    # Make predictions on the test set
+    y_pred = model.predict(test_generator)
+    y_actual = test_generator.classes
 
-print(model.summary())
+    # should round to 0 or 1...
+    y_pred = np.round(y_pred)
+    y_pred = np.argmax(y_pred, axis=1)
 
-epochs = 5000
-history = model.fit(
-    train_generator,
-    validation_data=test_generator,
-    epochs=epochs,
-    class_weight=class_weights,
-    callbacks=my_callbacks
-)
+    confusion_mtx = confusion_matrix(y_actual, y_pred)
+    print("Raw confusion Matrix:\n", confusion_mtx)
 
-acc = history.history['categorical_accuracy']
-val_acc = history.history['val_categorical_accuracy']
+    # Evaluation
+    print(classification_report(test_generator.classes, y_pred))
 
-loss = history.history['loss']
-val_loss = history.history['val_loss']
 
-# Evaluate the model on the test set
-test_loss, test_acc = model.evaluate(test_generator)
-print('Test accuracy:', test_acc)
+    # manually set - could be better
+    tick_marks = np.arange(2)
+    plt.xticks(tick_marks, ['Plant Matter', 'No Plant Matter'], rotation=45)
+    plt.yticks(tick_marks, ['Plant Matter', 'No Plant Matter'])
 
-# Make predictions on the test set
-y_pred = model.predict(test_generator)
-y_actual = test_generator.classes
+    thresh = confusion_mtx.max() / 2.
+    for i in range(confusion_mtx.shape[0]):
+        for j in range(confusion_mtx.shape[1]):
+            plt.text(j, i, format(confusion_mtx[i, j]), ha="center", va="center",
+                     color="white" if confusion_mtx[i, j] > thresh else "black")
 
-# should round to 0 or 1...
-y_pred = np.round(y_pred)
-y_pred = np.argmax(y_pred, axis=1)
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.title(f'Confusion Matrix at {size} x {size}')
+    plt.colorbar()
+    plt.savefig(f'confusion_{size}x{size}.png')
+    plt.show()
 
-confusion_mtx = confusion_matrix(y_actual, y_pred)
-print(confusion_mtx)
+    plt.plot(history.history['categorical_accuracy'])
+    plt.plot(history.history['val_categorical_accuracy'])
+    plt.title(f'accuracy chart')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'], loc='upper left')
+    plt.savefig(f'accuracy_chart_{size}x{size}.png')
+    plt.show()
 
-# Evaluation
-print(classification_report(test_generator.classes, y_pred))
-
-plt.imshow(confusion_mtx, cmap='binary', interpolation='nearest')
-plt.colorbar()
-
-# manually set - could be better
-tick_marks = np.arange(2)
-plt.xticks(tick_marks, ['Elodea', 'No Elodea'], rotation=45)
-plt.yticks(tick_marks, ['Elodea', 'No Elodea'])
-
-thresh = confusion_mtx.max() / 2.
-for i in range(confusion_mtx.shape[0]):
-    for j in range(confusion_mtx.shape[1]):
-        plt.text(j, i, format(confusion_mtx[i, j]), ha="center", va="center",
-                 color="white" if confusion_mtx[i, j] > thresh else "black")
-
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
-plt.title(f'Confusion Matrix')
-plt.savefig('confusionmtx.png')
-plt.show()
-
-plt.plot(history.history['categorical_accuracy'])
-plt.plot(history.history['val_categorical_accuracy'])
-plt.title(f'accuracy chart')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='upper left')
-plt.savefig('accuracy_chart.png')
-plt.show()
-
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title(f'loss chart')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'], loc='upper left')
-plt.savefig('loss.png')
-plt.show()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title(f'loss chart')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'], loc='upper left')
+    plt.savefig(f'loss_{size}x{size}.png')
+    plt.show()
