@@ -60,7 +60,7 @@ for size, dataset_path in zip(sizes, folder_paths):
     y_pred = classifier.predict(X_test)
 
     print(classification_report(
-        y_test, y_pred, labels=['vegetation', 'no vegetation']
+        y_test, y_pred,
     ))
 
 
