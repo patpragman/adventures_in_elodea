@@ -62,5 +62,6 @@ for size, dataset_path in zip(sizes, folder_paths):
         y_test, y_pred,
     ))
 
+# now check js' stuff
 
 
