@@ -47,7 +47,6 @@ for i, data_path in enumerate(datasets):
         print(c)
 
     # encoder = make_encoder(os.listdir(data_path))
-
     mapping = {n: i for i, n in enumerate(classes)}
     demapping = {i: n for i, n in enumerate(classes)}
 
