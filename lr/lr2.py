@@ -33,7 +33,7 @@ for size, dataset_path in zip(sizes, folder_paths):
     # now walk through and load the data in the containers we constructed above
     for root, dirs, files in os.walk(dataset_path):
 
-        for file in tqdm(files):
+        for file in files:
             if ".JPEG" in file.upper() or ".JPG" in file.upper() or ".PNG" in file.upper():
                 key = root.split("/")[-1]
                 img = io.imread(f"{root}/{file}", as_gray=True)
