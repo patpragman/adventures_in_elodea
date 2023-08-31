@@ -24,7 +24,7 @@ for size in sizes:
     y_pred = frame_of_same_size['guess'].to_list()
 
 
-    print(f'Classification report for {size}x{size} images')
+    print(f'Classification report for {size}x{size} images with js code')
     print(classification_report(y_true, y_pred,
                                 ))
 

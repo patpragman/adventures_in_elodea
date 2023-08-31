@@ -12,7 +12,7 @@ sizes = [1024, 512, 256, 128, 64]
 folder_paths = [f"resized_data/data_{size}" for size in sizes]
 
 for size, dataset_path in zip(sizes, folder_paths):
-    print(f"Training Logistic Regression Model for {size} x {size} images")
+    print(f"Logistic Regression Model for {size} x {size} images")
     # variables to hold our data
     data = []
     Y = []
