@@ -8,8 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-sizes = [512, 256, 128, 64]
-sizes.reverse()
+sizes = [1024, 512, 256, 128, 64]
 folder_paths = [f"resized_data/data_{size}" for size in sizes]
 
 for size, dataset_path in zip(sizes, folder_paths):
