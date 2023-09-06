@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     for size in sizes:
         # construct a labels.csv in each folder
-        dataset = FloatImageDataset(directory_path=f"/home/patrickpragman/resized_data/data_{size}")
+        dataset = FloatImageDataset(directory_path=f"../../resized_data/data_{size}")
 
         # make a train-test split
 

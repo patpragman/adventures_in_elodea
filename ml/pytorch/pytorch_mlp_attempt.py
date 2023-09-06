@@ -3,11 +3,9 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from torchvision import datasets
 from torchvision.transforms import ToTensor, Grayscale
 from train_test_suite import train_and_test_model
 from datamodel import FloatImageDataset, train_test_split
-from torch.nn import BatchNorm2d
 
 import plotly.express as px
 import pandas as pd
@@ -19,9 +17,7 @@ sizes = [1024, 512, 256, 128, 64]
 sizes.reverse()
 for size in sizes:
     # construct a labels.csv in each folder
-    dataset = FloatImageDataset(directory_path=f"/home/patrickpragman/resized_data/data_{size}", transform=[Grayscale()])
-
-    # make a train-test split
+    dataset = FloatImageDataset(directory_path=f"../../resized_data/data_{size}", transform=[Grayscale()])
 
     training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8, random_state=42)
 
@@ -33,7 +29,6 @@ for size in sizes:
     data into the model, and separate things out etc.
     """
 
-    # note the camel case
     train_dataloader = DataLoader(training_dataset, batch_size=batch_size)
     test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
 
@@ -109,7 +104,7 @@ for size in sizes:
     figs = [
         px.line(df, x="epoch", y=key, title=f"{key.replace('_', ' ')}") for key in history if key != "epoch"
     ]
-    for fig in figs:
-        fig.show()
+    for i, fig in enumerate(figs):
+        fig.to_html(f"plot_{i}.html")
 
     print('done!')

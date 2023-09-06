@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-import PIL
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
@@ -12,9 +11,10 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from collections import Counter
 
-# preparation steps (we'll need these a lot)
-from sklearn.metrics import classification_report, confusion_matrix
+from cm_handler import display_and_save_cm  # handles confusion matrices
 
+# preparation steps (we'll need these a lot)
+from sklearn.metrics import classification_report
 import pathlib
 
 # print out gpu status
@@ -25,7 +25,7 @@ batch_size = 16
 k = 32
 number_of_classes = 2
 dropout_value = 0.1
-epochs = 500
+epochs = 200
 
 
 my_callbacks = [
@@ -45,11 +45,9 @@ datagen = ImageDataGenerator(rescale=1. / 255,
                              height_shift_range=0.1,
                              rotation_range=30,
                              horizontal_flip=True,
-                             vertical_flip=True,
-                             )
+                             vertical_flip=True,)
 
 sizes = [1024, 512, 256, 128, 64]
-sizes.reverse()
 for size in sizes:
     print(f'Building Model for Image size: {size} x {size}')
 
@@ -106,13 +104,13 @@ for size in sizes:
     # import the ResNet50 model
     imported_model = tf.keras.applications.ResNet50(include_top=False,
                                                     input_shape=(img_width, img_height, 3),
-                                                    pooling='avg', classes=5,
+                                                    pooling='avg', classes=2,
                                                     weights='imagenet')
 
     model = Sequential([
         imported_model,  # Resnet of whatever size you want
         layers.Flatten(),
-        layers.Dense(1024, activation='relu'),  # layer of neurons here for good measure
+        layers.Dense(512, activation='relu'),  # layer of neurons here for good measure
         layers.Dropout(dropout_value),
         layers.Dense(number_of_classes, activation='softmax')
     ])
@@ -123,7 +121,6 @@ for size in sizes:
                   )
 
     model.build(input_shape=(None, img_height, img_width, 3))
-
     print(model.summary())
 
     history = model.fit(
@@ -152,31 +149,14 @@ for size in sizes:
     y_pred = np.round(y_pred)
     y_pred = np.argmax(y_pred, axis=1)
 
-    confusion_mtx = confusion_matrix(y_actual, y_pred)
-    print("Raw confusion Matrix:\n", confusion_mtx)
 
     # Evaluation
-    print(classification_report(test_generator.classes, y_pred))
+    report = classification_report(test_generator.classes, y_pred)
+    print(report)
 
+    display_and_save_cm(y_actual, y_pred, labels=["Vegetation", "No Vegetation"])
 
-    # manually set - could be better
-    tick_marks = np.arange(2)
-    plt.xticks(tick_marks, ['Plant Matter', 'No Plant Matter'], rotation=45)
-    plt.yticks(tick_marks, ['Plant Matter', 'No Plant Matter'])
-
-    thresh = confusion_mtx.max() / 2.
-    for i in range(confusion_mtx.shape[0]):
-        for j in range(confusion_mtx.shape[1]):
-            plt.text(j, i, format(confusion_mtx[i, j]), ha="center", va="center",
-                     color="white" if confusion_mtx[i, j] > thresh else "black")
-
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    plt.title(f'Confusion Matrix at {size} x {size}')
-    plt.colorbar()
-    plt.savefig(f'confusion_{size}x{size}.png')
-    plt.show()
-
+    # display the accuracy
     plt.plot(history.history['categorical_accuracy'])
     plt.plot(history.history['val_categorical_accuracy'])
     plt.title(f'accuracy chart')
