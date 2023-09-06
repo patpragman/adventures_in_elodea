@@ -12,9 +12,11 @@ class FloatImageDataset(Dataset):
     def __init__(self, directory_path,
                  true_folder_name: str = "score_0",
                  false_folder_name: str = "score_3",
+                 augmentations=None,
                  transform=None):
         self.directory_path = directory_path
         self.transform = transform
+        self.augmentations = augmentations
 
         # simple one-hot encoder
         def onehot(path: str) -> int:
@@ -60,6 +62,10 @@ class FloatImageDataset(Dataset):
         if self.transform:
             for transform in self.transform:
                 image = transform(image)
+
+        if self.augmentations:
+            for augmentation in self.augmentations:
+                imate = augmentation(image)
 
 
         return image, label

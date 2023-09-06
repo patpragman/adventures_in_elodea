@@ -7,8 +7,10 @@ from torchvision.transforms import ToTensor, Grayscale
 from train_test_suite import train_and_test_model
 from datamodel import FloatImageDataset, train_test_split
 
+from sklearn.metrics import classification_report
 import plotly.express as px
 import pandas as pd
+pd.options.plotting.backend = "plotly"
 """
 these are the raw datasets - these apparently cannot be directly loaded into the model
 """
@@ -99,12 +101,24 @@ for size in sizes:
                                    model, loss_fn, optimizer,
                                    device, epochs=150, verbose=False)
 
+    # evaluate the trained model
+    y_pred = []
+    y_true = []
 
+    for batch, (X, y) in enumerate(test_dataloader):
+        y_pred.append(model(X).detach().numpy())  # compute the prediction
+        y_true.append(y)
+
+    print(y_pred, type(y_pred))
+    print(y_true, type(y_true))
+
+    print(f'for model of {size} x {size} images:')
+    print(classification_report(y_true, y_pred))
     df = pd.DataFrame(history)
-    figs = [
-        px.line(df, x="epoch", y=key, title=f"{key.replace('_', ' ')}") for key in history if key != "epoch"
-    ]
-    for i, fig in enumerate(figs):
-        fig.to_html(f"plot_{i}.html")
+
+    df.plot(x='epoch', y=["training_loss", "testing_loss"])
+    df.plot(x="epoch", y="testing_accuracy")
+
+
 
     print('done!')
