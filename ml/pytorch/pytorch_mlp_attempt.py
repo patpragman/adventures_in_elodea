@@ -102,7 +102,7 @@ for size in sizes:
     history = train_and_test_model(train_dataloader,
                                    test_dataloader,
                                    model, loss_fn, optimizer,
-                                   device, epochs=10, verbose=False)
+                                   device, epochs=250, verbose=False)
 
     # evaluate the trained model
     y_pred = []
@@ -115,13 +115,11 @@ for size in sizes:
         y_pred.extend(prediction)
         y_true.extend(y.detach().cpu().numpy())
 
-    print(y_pred)
-    print(y_true)
 
     print(f'for model of {size} x {size} images:')
     print(classification_report(y_true, y_pred))
     df = pd.DataFrame(history)
-
+    df.to_csv(f'history_{size}.csv')
     df.plot(x='epoch', y=["training_loss", "testing_loss"])
     df.plot(x="epoch", y="testing_accuracy")
 
