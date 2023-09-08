@@ -4,13 +4,13 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor, Grayscale
-from train_test_suite import train_and_test_model
+from train_test_suite import train_and_test_model, saved_model_tester
 from datamodel import FloatImageDataset, train_test_split
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import classification_report
-import plotly.express as px
 import pandas as pd
-pd.options.plotting.backend = "plotly"
+
 """
 these are the raw datasets - these apparently cannot be directly loaded into the model
 """
@@ -102,15 +102,24 @@ for size in sizes:
     history = train_and_test_model(train_dataloader,
                                    test_dataloader,
                                    model, loss_fn, optimizer,
-                                   device, epochs=100, verbose=False)
+                                   device, epochs=75, verbose=False)
+    df = pd.DataFrame(history)
+    df.to_csv(f'history_{size}.csv')
+    df.plot(x='epoch', y=["training_loss", "testing_loss"])
+    df.plot(x="epoch", y="testing_accuracy")
+    plt.show()
 
-    # evaluate the trained model
+    torch.save(model.state_dict(), f"model_size_{size}.pth")
+
+    test_model = NeuralNetwork()
+    test_model.load_state_dict(torch.load("test.pth"))
+    test_model.eval()
+
     y_pred = []
     y_true = []
-
     for batch, (X, y) in enumerate(test_dataloader):
         X, y = X.to(device), y.to(device)
-        prediction = model(X).detach().cpu().numpy()
+        prediction = test_model(X).detach().cpu().numpy()
         prediction = np.argmax(prediction, axis=1)
         y_pred.extend(prediction)
         y_true.extend(y.detach().cpu().numpy())
@@ -118,9 +127,5 @@ for size in sizes:
 
     print(f'for model of {size} x {size} images:')
     print(classification_report(y_true, y_pred))
-    df = pd.DataFrame(history)
-    df.to_csv(f'history_{size}.csv')
-    df.plot(x='epoch', y=["training_loss", "testing_loss"])
-    df.plot(x="epoch", y="testing_accuracy")
 
 print('done!')

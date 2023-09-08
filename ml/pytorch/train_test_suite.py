@@ -2,7 +2,10 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+from sklearn.metrics import classification_report
+import numpy as np
+from datamodel import FloatImageDataset, train_test_split
+from torchvision.transforms import ToTensor, Grayscale
 
 def train(dataloader: DataLoader,
           model: nn.Module,
@@ -96,3 +99,22 @@ def train_and_test_model(
             "testing_accuracy": testing_accuracies,
             "epoch": epoch}
 
+
+def saved_model_tester(model: nn.Module,
+                       test_dataloader: DataLoader,
+                       device: str) -> str:
+
+
+
+    # evaluate the trained model
+    y_pred = []
+    y_true = []
+
+    for batch, (X, y) in enumerate(test_dataloader):
+        X, y = X.to(device), y.to(device)
+        prediction = model(X).detach().cpu().numpy()
+        prediction = np.argmax(prediction, axis=1)
+        y_pred.extend(prediction)
+        y_true.extend(y.detach().cpu().numpy())
+
+    return classification_report(y_true, y_pred)
