@@ -102,7 +102,7 @@ for size in sizes:
     history = train_and_test_model(train_dataloader,
                                    test_dataloader,
                                    model, loss_fn, optimizer,
-                                   device, epochs=150, verbose=False)
+                                   device, epochs=10, verbose=False)
 
     # evaluate the trained model
     y_pred = []
