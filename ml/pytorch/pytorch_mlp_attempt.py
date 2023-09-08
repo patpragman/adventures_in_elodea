@@ -78,6 +78,7 @@ for size in sizes:
                 nn.ReLU(),
                 self.dropout,
                 nn.Linear(1024, 2),
+                nn.Softmax(),
             )
 
         def forward(self, x):
@@ -108,6 +109,7 @@ for size in sizes:
     y_true = []
 
     for batch, (X, y) in enumerate(test_dataloader):
+        X, y = X.to("cpu"), y.to("cpu")
         prediction = model(X).detach().numpy()
         prediction = np.argmax(prediction, axis=1)
         y_pred.extend(prediction)
