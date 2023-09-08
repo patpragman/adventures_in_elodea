@@ -118,7 +118,7 @@ for size in sizes:
     y_pred = []
     y_true = []
     for batch, (X, y) in enumerate(test_dataloader):
-        X, y = X.to(device), y.to(device)
+        # X, y = X.to(device), y.to(device)  # you want everything on the CPU
         prediction = test_model(X).detach().cpu().numpy()
         prediction = np.argmax(prediction, axis=1)
         y_pred.extend(prediction)
