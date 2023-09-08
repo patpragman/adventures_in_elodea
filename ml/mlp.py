@@ -1,14 +1,10 @@
-import os
-
-import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
+from tensorflow import keras
+from sklearn.model_selection import train_test_split
 
-from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
-from collections import Counter
+from keras import datasets, layers, models
+import matplotlib.pyplot as plt
+from keras.preprocessing.image import ImageDataGenerator
 
 from cm_handler import display_and_save_cm  # handles confusion matrices
 
@@ -27,17 +23,9 @@ dropout_value = 0.1
 epochs = 200
 
 
-my_callbacks = [
-    EarlyStopping(monitor="val_categorical_accuracy",
-                  patience=25,
-                  restore_best_weights=True),
-    ReduceLROnPlateau(monitor="val_categorical_accuracy",
-                      factor=0.50, patience=10,
-                      verbose=1,
-                      min_delta=0.0001),
-]
 
-datagen = ImageDataGenerator()
+
+datagen = ImageDataGenerator(validation_split=0.2)
 
 """
 rescale=1. / 255,
@@ -75,25 +63,6 @@ for size in sizes:
     train_class_counts = train_generator.classes
     test_class_counts = test_generator.classes
 
-    train_class_count = dict(
-        zip(train_generator.class_indices.keys(), np.zeros(len(train_generator.class_indices), dtype=int)))
-    test_class_count = dict(
-        zip(test_generator.class_indices.keys(), np.zeros(len(test_generator.class_indices), dtype=int)))
-
-    for label in train_class_counts:
-        train_class_count[list(train_generator.class_indices.keys())[int(label)]] += 1
-
-    for label in test_class_counts:
-        test_class_count[list(test_generator.class_indices.keys())[int(label)]] += 1
-
-    print('Number of training samples in each class in the training set:', train_class_count)
-    print('Number of test samples in each class in the testing set:', test_class_count)
-
-    counter = Counter(train_generator.classes)
-    max_val = float(max(counter.values()))
-    class_weights = {class_id: max_val / num_images for class_id, num_images in counter.items()}
-    print(class_weights)
-
     data_augmentation = keras.Sequential(
         [
             layers.Rescaling(1. / 255, input_shape=(img_height, img_width, 3)),
@@ -105,13 +74,13 @@ for size in sizes:
         ]
     )
 
-    model = Sequential([
-        tf.keras.Input(shape=(img_height, img_width, 3),
-        layers.Flatten(),
-        layers.Dense(2048, activation='relu'),
-        layers.Dense(1024, activation='relu'),
-        layers.Dense(number_of_classes, activation='softmax')
-    ])
+    model = models.Sequential()
+    model.add(tf.keras.Input(shape=(img_width, img_height, 3)))
+    model.add(layers.Flatten())
+    model.add(layers.Dense(4096, activation='relu'))
+    model.add(layers.Dense(2048, activation='relu'))
+    model.add(layers.Dense(1024, activation='relu'))
+    model.add(layers.Dense(2, activation='softmax'))
 
     model.compile(optimizer='adam',
                   loss="categorical_crossentropy",
@@ -125,8 +94,6 @@ for size in sizes:
         train_generator,
         validation_data=test_generator,
         epochs=epochs,
-        class_weight=class_weights,
-        callbacks=my_callbacks
     )
 
     acc = history.history['categorical_accuracy']

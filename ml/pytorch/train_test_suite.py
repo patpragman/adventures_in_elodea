@@ -65,13 +65,14 @@ def train_and_test_model(
         optimizer: torch.optim.Optimizer,
         device: str,
         epochs: int = 10,
+        silent: bool = False,
         verbose: bool = False,) -> dict:
     training_losses = []
     testing_losses = []
     testing_accuracies = []
     epoch = []
 
-    iterator = tqdm(range(epochs)) if not verbose else range(epochs)
+    iterator = tqdm(range(epochs)) if not verbose or not silent else range(epochs)
     for t in iterator:
         if verbose:
             print(f"Epoch {t + 1}:\n ----------------------------------------------------------")
@@ -84,10 +85,11 @@ def train_and_test_model(
         testing_accuracies.append(test_acc)
         epoch.append(t)
 
-        if not verbose:
-            iterator.set_description(
-                f"Training Loss: {training_loss:.2f} Testing Loss: {test_loss:.2f} Accuracy {test_acc:.2f}"
-            )
+        if not silent:
+            if not verbose:
+                iterator.set_description(
+                    f"Training Loss: {training_loss:.2f} Testing Loss: {test_loss:.2f} Accuracy {test_acc:.2f}"
+                )
 
     return {"training_loss": training_losses,
             "testing_loss": testing_losses,

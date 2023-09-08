@@ -1,5 +1,5 @@
 # doing the tutorial from the website
-
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -63,16 +63,21 @@ for size in sizes:
             super().__init__()  # initialize the parent class
 
             self.flatten = nn.Flatten()
+            self.dropout = nn.Dropout(0.25)
 
             self.linear_relu_stack = nn.Sequential(
                 nn.Linear(size * size, 4096),  # you can't see it here, but in the linear layers, the bias is true
                 nn.ReLU(),
+                self.dropout,
+
                 nn.Linear(4096, 2048),
                 nn.ReLU(),
+                self.dropout,
+
                 nn.Linear(2048, 1024),
                 nn.ReLU(),
+                self.dropout,
                 nn.Linear(1024, 2),
-
             )
 
         def forward(self, x):
@@ -85,12 +90,9 @@ for size in sizes:
     model = NeuralNetwork().to(device)  # we have to send this nn to whatever device we're using
     print(model)
 
-
     loss_fn = nn.CrossEntropyLoss()  # I don't know why these aren't just functions
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-5)  # set the optimizer to SGD
 
-    print("type of loss_fn:", type(loss_fn))
-    print("type of optimizer:", type(optimizer))
     """
     now I need some functions to train and test the data I'm working with
     
@@ -106,11 +108,13 @@ for size in sizes:
     y_true = []
 
     for batch, (X, y) in enumerate(test_dataloader):
-        y_pred.append(model(X).detach().numpy())  # compute the prediction
-        y_true.append(y)
+        prediction = model(X).detach().numpy()
+        prediction = np.argmax(prediction, axis=1)
+        y_pred.extend(prediction)
+        y_true.extend(y.detach().numpy())
 
-    print(y_pred, type(y_pred))
-    print(y_true, type(y_true))
+    print(y_pred)
+    print(y_true)
 
     print(f'for model of {size} x {size} images:')
     print(classification_report(y_true, y_pred))
@@ -119,6 +123,4 @@ for size in sizes:
     df.plot(x='epoch', y=["training_loss", "testing_loss"])
     df.plot(x="epoch", y="testing_accuracy")
 
-
-
-    print('done!')
+print('done!')
