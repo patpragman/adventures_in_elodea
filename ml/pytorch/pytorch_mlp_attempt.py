@@ -63,7 +63,7 @@ for size in sizes:
             super().__init__()  # initialize the parent class
 
             self.flatten = nn.Flatten()
-            self.dropout = nn.Dropout(0.25)
+            self.dropout = nn.Dropout(0.05)
 
             self.linear_relu_stack = nn.Sequential(
                 nn.Linear(size * size, 4096),  # you can't see it here, but in the linear layers, the bias is true
@@ -102,7 +102,7 @@ for size in sizes:
     history = train_and_test_model(train_dataloader,
                                    test_dataloader,
                                    model, loss_fn, optimizer,
-                                   device, epochs=250, verbose=False)
+                                   device, epochs=100, verbose=False)
 
     # evaluate the trained model
     y_pred = []
