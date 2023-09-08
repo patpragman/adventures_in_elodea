@@ -110,10 +110,10 @@ for size in sizes:
 
     for batch, (X, y) in enumerate(test_dataloader):
         X, y = X.to(device), y.to(device)
-        prediction = model(X).detach().numpy()
+        prediction = model(X).cpu().numpy()
         prediction = np.argmax(prediction, axis=1)
         y_pred.extend(prediction)
-        y_true.extend(y.detach().numpy())
+        y_true.extend(y.cpu().numpy())
 
     print(y_pred)
     print(y_true)
