@@ -113,7 +113,7 @@ for size in sizes:
         prediction = model(X).detach().cpu().numpy()
         prediction = np.argmax(prediction, axis=1)
         y_pred.extend(prediction)
-        y_true.extend(y.detach.cpu().numpy())
+        y_true.extend(y.detach().cpu().numpy())
 
     print(y_pred)
     print(y_true)
