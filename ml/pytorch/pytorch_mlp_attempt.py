@@ -112,7 +112,7 @@ for size in sizes:
     torch.save(model.state_dict(), f"model_size_{size}.pth")
 
     test_model = NeuralNetwork()
-    test_model.load_state_dict(torch.load("test.pth"))
+    test_model.load_state_dict(torch.load(f"model_size_{size}.pth"))
     test_model.eval()
 
     y_pred = []
